@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Tienda Online</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+    <!-- BARRA DE NAVEGACIÓN -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#">🛒 Tienda Online</a>
+            <button class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#modalCarrito">
+                Carrito <span id="cart-count" class="badge bg-danger">0</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- CATÁLOGO -->
+    <div class="container">
+        <h2 class="mb-4 text-center">Catálogo de Productos</h2>
+        <div id="productos-container" class="row row-cols-1 row-cols-md-3 g-4">
+            <!-- Productos cargados desde la API -->
+        </div>
+    </div>
+
+    <!-- VENTANA DEL CARRITO (MODAL) -->
+    <div class="modal fade" id="modalCarrito" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title">Tu Carrito de Compras</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <ul id="lista-carrito" class="list-group mb-3">
+                        <li class="list-group-item text-center text-muted">El carrito está vacío</li>
+                    </ul>
+                    <div class="d-flex justify-content-between fw-bold fs-5 mb-3">
+                        <span>Total:</span>
+                        <span id="total-precio" class="text-success">$0.00</span>
+                    </div>
+                </div>
+                <div class="modal-footer d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="vaciarCarrito()">Vaciar Carrito</button>
+                    <div>
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+                        <button type="button" class="btn btn-success btn-sm" onclick="procesarCompra()">Procesar Compra</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOOTSTRAP JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- LÓGICA DEL CARRITO -->
+    <script>
+        let carrito = [];
+
+        // 1. Cargar productos desde la API REST de Spring Boot
+        async function cargarProductos() {
+            try {
+                const response = await fetch('/api/productos');
+                const productos = await response.json();
+                const container = document.getElementById('productos-container');
+                container.innerHTML = '';
+
+                productos.forEach(p => {
+                    const card = `
+                        <div class="col">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-body d-flex flex-column justify-content-between">
+                                    <div>
+                                        <h5 class="card-title text-primary">${p.nombre}</h5>
+                                        <h6 class="card-subtitle mb-2 text-muted">Código: ${p.codigo || 'N/A'}</h6>
+                                        <p class="card-text text-secondary">${p.descripcion || 'Sin descripción disponible.'}</p>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <span class="fs-4 fw-bold text-success">$${p.precio}</span>
+                                        <button class="btn btn-primary btn-sm" onclick="agregarAlCarrito('${p.nombre}', ${p.precio})">
+                                            Agregar al carrito
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.innerHTML += card;
+                });
+            } catch (error) {
+                console.error('Error al cargar productos:', error);
+            }
+        }
+
+        // 2. Agregar ítem al carrito
+        function agregarAlCarrito(nombre, precio) {
+            carrito.push({ nombre, precio });
+            actualizarVistaCarrito();
+        }
+
+        // 3. Vaciar carrito
+        function vaciarCarrito() {
+            carrito = [];
+            actualizarVistaCarrito();
+        }
+
+        // 4. Procesar compra
+        function procesarCompra() {
+            if (carrito.length === 0) {
+                alert('El carrito está vacío. Agrega productos antes de procesar la compra.');
+                return;
+            }
+            alert('🎉 ¡Compra realizada con éxito! Gracias por tu pedido.');
+            carrito = [];
+            actualizarVistaCarrito();
+            
+            // Cerrar la ventana modal automáticamente
+            const modalElement = document.getElementById('modalCarrito');
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) modal.hide();
+        }
+
+        // 5. Actualizar interfaz del carrito
+        function actualizarVistaCarrito() {
+            document.getElementById('cart-count').innerText = carrito.length;
+
+            const lista = document.getElementById('lista-carrito');
+            const totalElement = document.getElementById('total-precio');
+
+            if (carrito.length === 0) {
+                lista.innerHTML = '<li class="list-group-item text-center text-muted">El carrito está vacío</li>';
+                totalElement.innerText = '$0.00';
+                return;
+            }
+
+            lista.innerHTML = '';
+            let total = 0;
+
+            carrito.forEach((item) => {
+                total += item.precio;
+                lista.innerHTML += `
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        ${item.nombre}
+                        <span class="fw-bold text-success">$${item.precio}</span>
+                    </li>
+                `;
+            });
+
+            totalElement.innerText = `$${total.toFixed(2)}`;
+        }
+
+        document.addEventListener('DOMContentLoaded', cargarProductos);
+    </script>
+</body>
+</html>

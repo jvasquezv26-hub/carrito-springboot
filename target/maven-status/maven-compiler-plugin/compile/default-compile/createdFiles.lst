@@ -1,0 +1,5 @@
+com/carrito/model/Producto.class
+com/carrito/repository/ProductoRepository.class
+com/carrito/TiendaApplication.class
+com/carrito/App.class
+com/carrito/controller/ProductoController.class
